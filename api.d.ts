@@ -757,3 +757,16 @@ export interface StorageInfo {
 export interface VersionInfo {
     version: string;
 }
+
+/**
+ * RTMP
+ */
+
+/**
+ * RTMPエンドポイント情報
+ */
+export interface RTMPEndpoint {
+    name: string;
+    url: string;
+    description: string;
+}

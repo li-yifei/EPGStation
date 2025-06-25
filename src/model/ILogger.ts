@@ -5,4 +5,5 @@ export default interface ILogger {
     access: log4js.Logger;
     stream: log4js.Logger;
     encode: log4js.Logger;
+    rtmp: log4js.Logger;
 }

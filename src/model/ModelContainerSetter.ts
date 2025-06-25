@@ -36,6 +36,8 @@ import IVideoApiModel from './api/video/IVideoApiModel';
 import IVideoUtil from './api/video/IVideoUtil';
 import VideoApiModel from './api/video/VideoApiModel';
 import VideoUtil from './api/video/VideoUtil';
+import IRTMPStreamModel from './api/rtmp/IRTMPStreamModel';
+import RTMPStreamModel from './api/rtmp/RTMPStreamModel';
 import Configuration from './Configuration';
 import ConnectionCheckModel from './ConnectionCheckModel';
 import ChannelDB from './db/ChannelDB';
@@ -404,6 +406,8 @@ export const set = (container: Container): void => {
     container.bind<IStreamManageModel>('IStreamManageModel').to(StreamManageModel).inSingletonScope();
 
     container.bind<IStreamApiModel>('IStreamApiModel').to(StreamApiModel).inSingletonScope();
+
+    container.bind<IRTMPStreamModel>('IRTMPStreamModel').to(RTMPStreamModel).inSingletonScope();
 
     container.bind<IStorageApiModel>('IStorageApiModel').to(StorageApiModel).inSingletonScope();
 };

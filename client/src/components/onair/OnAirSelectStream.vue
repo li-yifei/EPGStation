@@ -29,12 +29,17 @@
                 </div>
                 <v-card-actions>
                     <v-btn v-if="!!needsGotoGuideButton === true" color="primary" text v-on:click="gotoGuide">番組表</v-btn>
+                    <v-btn color="orange" text v-on:click="openRTMPDialog">
+                        <v-icon left>mdi-broadcast</v-icon>
+                        RTMP配信
+                    </v-btn>
                     <v-spacer></v-spacer>
                     <v-btn color="primary" text v-on:click="dialogState.isOpen = false">キャンセル</v-btn>
                     <v-btn color="primary" text v-on:click="view">視聴</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
+        <RTMPStreamDialog ref="rtmpDialog"></RTMPStreamDialog>
     </div>
 </template>
 
@@ -45,8 +50,13 @@ import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import Mpegts from 'mpegts.js';
 import IOnAirSelectStreamState from '../../model/state/onair/IOnAirSelectStreamState';
 import Util from '../../util/Util';
+import RTMPStreamDialog from './RTMPStreamDialog.vue';
 
-@Component({})
+@Component({
+    components: {
+        RTMPStreamDialog,
+    },
+})
 export default class OnAirSelectStream extends Vue {
     @Prop({ required: false })
     public needsGotoGuideButton: boolean | undefined;
@@ -198,6 +208,21 @@ export default class OnAirSelectStream extends Vue {
                     text: '視聴ページへの移動に失敗',
                 });
             });
+        }
+    }
+
+    /**
+     * RTMPライブ配信ダイアログを開く
+     */
+    public openRTMPDialog(): void {
+        const channel = this.dialogState.getChannelItem();
+        if (channel === null) {
+            return;
+        }
+
+        const rtmpDialog = this.$refs.rtmpDialog as any;
+        if (rtmpDialog) {
+            rtmpDialog.open(channel.id, channel.name);
         }
     }
 

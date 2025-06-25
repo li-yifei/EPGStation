@@ -25,6 +25,7 @@ export default class LoggerModel implements ILoggerModel {
                     access: { type: 'console' },
                     stream: { type: 'console' },
                     encode: { type: 'console' },
+                    rtmp: { type: 'console' },
                     console: { type: 'console' },
                 },
                 categories: {
@@ -33,6 +34,7 @@ export default class LoggerModel implements ILoggerModel {
                     access: { appenders: ['access'], level: 'info' },
                     stream: { appenders: ['stream'], level: 'info' },
                     encode: { appenders: ['system'], level: 'info' },
+                    rtmp: { appenders: ['rtmp'], level: 'info' },
                 },
             });
         } else {
@@ -52,6 +54,7 @@ export default class LoggerModel implements ILoggerModel {
             access: log4js.getLogger('access'),
             stream: log4js.getLogger('stream'),
             encode: log4js.getLogger('encode'),
+            rtmp: log4js.getLogger('rtmp'),
         };
     }
 
@@ -98,14 +101,17 @@ export default class LoggerModel implements ILoggerModel {
             .replace('%OperatorAccess%', this.createDefaultLogPath('Operator', 'access.log'))
             .replace('%OperatorStream%', this.createDefaultLogPath('Operator', 'stream.log'))
             .replace('%OperatorEncode%', this.createDefaultLogPath('Operator', 'encode.log'))
+            .replace('%OperatorRTMP%', this.createDefaultLogPath('Operator', 'rtmp.log'))
             .replace('%ServiceSystem%', this.createDefaultLogPath('Service', 'system.log'))
             .replace('%ServiceAccess%', this.createDefaultLogPath('Service', 'access.log'))
             .replace('%ServiceStream%', this.createDefaultLogPath('Service', 'stream.log'))
             .replace('%ServiceEncode%', this.createDefaultLogPath('Service', 'encode.log'))
+            .replace('%ServiceRTMP%', this.createDefaultLogPath('Service', 'rtmp.log'))
             .replace('%EPGUpdaterSystem%', this.createDefaultLogPath('EPGUpdater', 'system.log'))
             .replace('%EPGUpdaterAccess%', this.createDefaultLogPath('EPGUpdater', 'access.log'))
             .replace('%EPGUpdaterStream%', this.createDefaultLogPath('EPGUpdater', 'stream.log'))
-            .replace('%EPGUpdaterEncode%', this.createDefaultLogPath('EPGUpdater', 'encode.log'));
+            .replace('%EPGUpdaterEncode%', this.createDefaultLogPath('EPGUpdater', 'encode.log'))
+            .replace('%EPGUpdaterRTMP%', this.createDefaultLogPath('EPGUpdater', 'rtmp.log'));
     }
     /**
      * ログファイルのファイルパスを生成する

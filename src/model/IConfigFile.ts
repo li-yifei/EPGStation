@@ -36,6 +36,17 @@ export interface KodiInfo {
     password?: string;
 }
 
+export interface RTMPEndpoint {
+    name: string;
+    url: string;
+    description: string;
+}
+
+export interface RTMPConfig {
+    endpoints: RTMPEndpoint[];
+    cmd: string;
+}
+
 /**
  * config ファイル形式
  */
@@ -187,6 +198,9 @@ export default interface IConfigFile {
             };
         };
     };
+
+    // RTMPライブ配信設定
+    rtmp?: RTMPConfig;
 
     // 配信先 kodi 設定
     kodiHosts?: KodiInfo[];
