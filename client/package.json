@@ -2,10 +2,13 @@
     "name": "epgstation-client",
     "version": "2.10.0",
     "private": true,
+    "engines": {
+        "node": ">=18.0.0 <=22"
+    },
     "scripts": {
-        "build": "NODE_OPTIONS='--openssl-legacy-provider' vue-cli-service build",
-        "lint": "NODE_OPTIONS='--openssl-legacy-provider' vue-cli-service lint",
-        "watch": "NODE_OPTIONS='--openssl-legacy-provider' vue-cli-service build --watch --mode development"
+        "build": "vue-cli-service build",
+        "lint": "vue-cli-service lint",
+        "watch": "vue-cli-service build --watch --mode development"
     },
     "dependencies": {
         "@mdi/font": "7.4.47",

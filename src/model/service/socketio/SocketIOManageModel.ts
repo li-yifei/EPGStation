@@ -13,8 +13,8 @@ export default class SocketIOManageModel implements ISocketIOManageModel {
     private log: ILogger;
     private config: IConfigFile;
     private ios: SocketIO.Server[] = [];
-    private callTimer: NodeJS.Timer | null = null;
-    private encodeProgressCallTimer: NodeJS.Timer | null = null;
+    private callTimer: NodeJS.Timeout | null = null;
+    private encodeProgressCallTimer: NodeJS.Timeout | null = null;
 
     constructor(@inject('ILoggerModel') logger: ILoggerModel, @inject('IConfiguration') configuration: IConfiguration) {
         this.log = logger.getLogger();

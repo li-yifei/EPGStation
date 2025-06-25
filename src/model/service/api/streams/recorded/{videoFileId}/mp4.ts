@@ -8,7 +8,7 @@ export const get: Operation = async (req, res) => {
 
     let isClosed: boolean = false;
     let result: StreamResponse;
-    let keepTimer: NodeJS.Timer;
+    let keepTimer: NodeJS.Timeout;
 
     const stop = async () => {
         clearInterval(keepTimer);

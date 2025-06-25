@@ -32,6 +32,9 @@
         "url": "https://github.com/l3tnun/EPGStation-V2/issues"
     },
     "homepage": "https://github.com/l3tnun/EPGStation-V2#readme",
+    "engines": {
+        "node": ">=18.0.0 <=22"
+    },
     "dependencies": {
         "arib-subtitle-timedmetadater": "4.0.10",
         "aribts": "2.1.12",
@@ -71,7 +74,7 @@
         "@types/minimist": "1.2.5",
         "@types/mkdirp": "1.0.2",
         "@types/multer": "1.4.9",
-        "@types/node": "18.11.9",
+        "@types/node": "22.10.2",
         "@types/socket.io": "3.0.1",
         "@types/source-map-support": "0.5.10",
         "@types/sqlite3": "3.1.11",
