@@ -20,6 +20,7 @@ export default class RTMPStreamModel implements IRTMPStreamModel {
     private startTime: number | null = null;
     private errorMessage: string | null = null;
     private currentProcess: ChildProcess | null = null;
+    private forceKillTimeout: NodeJS.Timeout | null = null;
 
     constructor(
         @inject('ILoggerModel') loggerModel: ILoggerModel,
@@ -115,21 +116,29 @@ export default class RTMPStreamModel implements IRTMPStreamModel {
 
         try {
             if (this.currentProcess) {
-                // プロセス終了
+                // 既存の強制終了タイマーをクリア
+                if (this.forceKillTimeout) {
+                    clearTimeout(this.forceKillTimeout);
+                    this.forceKillTimeout = null;
+                }
+
+                // プロセス終了 (SIGTERM)
                 this.currentProcess.kill('SIGTERM');
 
-                // 強制終了のタイムアウト設定
-                setTimeout(() => {
+                // 強制終了のタイムアウト設定 (5秒後にSIGKILL)
+                this.forceKillTimeout = setTimeout(() => {
                     if (this.currentProcess && !this.currentProcess.killed) {
                         this.log.rtmp.warn('RTMPライブ配信プロセスを強制終了します');
                         this.currentProcess.kill('SIGKILL');
                     }
+                    this.forceKillTimeout = null;
                 }, 5000);
 
+                // プロセス参照をクリア（実際の終了はexit/errorイベントで処理）
                 this.currentProcess = null;
             }
 
-            this.resetState();
+            // 状態を停止中に変更（resetStateは実際にプロセスが終了してから呼ぶ）
             this.log.rtmp.info('RTMPライブ配信停止完了');
         } catch (error: any) {
             this.log.rtmp.error(`RTMPライブ配信停止エラー: ${error.message}`);
@@ -171,20 +180,46 @@ export default class RTMPStreamModel implements IRTMPStreamModel {
         this.currentProcess.on('exit', (code, signal) => {
             this.log.rtmp.info(`RTMPライブ配信プロセス終了: code=${code}, signal=${signal}`);
 
+            // 強制終了タイマーをクリア
+            if (this.forceKillTimeout) {
+                clearTimeout(this.forceKillTimeout);
+                this.forceKillTimeout = null;
+            }
+
+            // プロセス終了の理由を判定
             if (this.currentStatus === RTMPStreamStatus.Streaming) {
-                // 予期しない終了
+                // 配信中の予期しない終了
                 this.currentStatus = RTMPStreamStatus.Error;
                 this.errorMessage = `プロセスが予期せず終了しました (code: ${code}, signal: ${signal})`;
+                this.log.rtmp.error(`RTMPライブ配信が予期せず終了: ${this.errorMessage}`);
             } else if (this.currentStatus === RTMPStreamStatus.Stopping) {
-                // 正常な停止
+                // 正常な停止処理中の終了
                 this.resetState();
+                this.log.rtmp.info('RTMPライブ配信プロセスが正常に終了しました');
+            } else if (this.currentStatus === RTMPStreamStatus.Starting) {
+                // 開始処理中の終了（開始失敗）
+                this.currentStatus = RTMPStreamStatus.Error;
+                this.errorMessage = `プロセス開始に失敗しました (code: ${code}, signal: ${signal})`;
+                this.log.rtmp.error(`RTMPライブ配信開始失敗: ${this.errorMessage}`);
             }
+
+            // プロセス参照をクリア
+            this.currentProcess = null;
         });
 
         this.currentProcess.on('error', error => {
             this.log.rtmp.error(`RTMPライブ配信プロセスエラー: ${error.message}`);
+
+            // 強制終了タイマーをクリア
+            if (this.forceKillTimeout) {
+                clearTimeout(this.forceKillTimeout);
+                this.forceKillTimeout = null;
+            }
+
+            // エラー状態に設定
             this.currentStatus = RTMPStreamStatus.Error;
             this.errorMessage = error.message;
+            this.currentProcess = null;
         });
 
         // FFmpegの標準エラー出力をログに記録
@@ -208,5 +243,11 @@ export default class RTMPStreamModel implements IRTMPStreamModel {
         this.startTime = null;
         this.errorMessage = null;
         this.currentProcess = null;
+
+        // 強制終了タイマーもクリア
+        if (this.forceKillTimeout) {
+            clearTimeout(this.forceKillTimeout);
+            this.forceKillTimeout = null;
+        }
     }
 }
