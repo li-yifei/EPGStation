@@ -67,6 +67,7 @@ describe('RTMP stream helpers', () => {
     expect(isValidRtmpUrl(' rtmps://example.com ')).toBe(true)
     expect(isValidRtmpUrl('http://example.com')).toBe(false)
     expect(isValidRtmpUrl('rtmp://')).toBe(false)
+    expect(isValidRtmpUrl('rtmp://example.com/live -y out.flv')).toBe(false)
   })
 
   it('builds start payloads for configured endpoints and custom urls', () => {
@@ -89,6 +90,7 @@ describe('RTMP stream helpers', () => {
     expect(buildRtmpStartPayload({ ...base, endpointValue: '' })).toBeNull()
     expect(buildRtmpStartPayload({ ...base, endpointValue: 'Y', streamKey: '  ' })).toBeNull()
     expect(buildRtmpStartPayload({ ...base, endpointValue: 'Y', channelId: null })).toBeNull()
+    expect(buildRtmpStartPayload({ ...base, endpointValue: 'Y', streamKey: 'key -y' })).toBeNull()
   })
 
   it('derives active state and labels', () => {

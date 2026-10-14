@@ -98,25 +98,6 @@ urlscheme:
     #     必要な場合のみ利用者が以下のように指定する。
     #     ios: vlc-x-callback://x-callback-url/download?url=PROTOCOL%3A%2F%2FADDRESS&filename=FILENAME
 
-# RTMPライブ配信設定
-rtmp:
-    # RTMPサーバーエンドポイント一覧
-    endpoints:
-        - name: YouTube
-          url: rtmp://a.rtmp.youtube.com/live2/
-          description: YouTube Live
-        - name: Twitch
-          url: rtmp://live.twitch.tv/live/
-          description: Twitch
-        - name: ニコニコ生放送
-          url: rtmp://nlpush.nicovideo.jp/live/
-          description: ニコニコ生放送
-        - name: カスタム
-          url: rtmp://example.com/live/
-          description: カスタムRTMPサーバー
-    # RTMPライブ配信FFmpegコマンドテンプレート
-    cmd: '%FFMPEG% -re -dual_mono_mode main -hwaccel qsv -hwaccel_output_format qsv -i %INPUT% -c:a libfdk_aac -ar 48000 -b:a 192k -ac 2 -c:v h264_qsv -vf vpp_qsv=deinterlace=2 -f flv %RTMP_URL%'
-
 stream:
     live:
         ts:

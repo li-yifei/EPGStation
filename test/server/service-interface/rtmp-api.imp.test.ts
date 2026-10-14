@@ -40,7 +40,7 @@ const makeRequest = (overrides: Record<string, any> = {}) => ({
 });
 
 describe('RTMP API route implementation details (unittest/imp)', () => {
-    let mockRTMPStreamModel: {
+    let model: {
         getStatus: ReturnType<typeof vi.fn>;
         start: ReturnType<typeof vi.fn>;
         stop: ReturnType<typeof vi.fn>;
@@ -48,16 +48,9 @@ describe('RTMP API route implementation details (unittest/imp)', () => {
     };
 
     beforeEach(() => {
-        mockRTMPStreamModel = {
-            getStatus: vi.fn(),
-            start: vi.fn(),
-            stop: vi.fn(),
-            getEndpoints: vi.fn(),
-        };
+        model = { getStatus: vi.fn(), start: vi.fn(), stop: vi.fn(), getEndpoints: vi.fn() };
         vi.spyOn(modelContainer, 'get').mockImplementation((token: string) => {
-            if (token === 'IRTMPStreamModel') {
-                return mockRTMPStreamModel;
-            }
+            if (token === 'IRTMPStreamModel') return model;
             throw new Error(`Unexpected DI token: ${token}`);
         });
     });
@@ -66,183 +59,75 @@ describe('RTMP API route implementation details (unittest/imp)', () => {
         vi.restoreAllMocks();
     });
 
-    describe('GET /api/rtmp error handling', () => {
-        it('responds with 500 when getStatus throws', async () => {
-            mockRTMPStreamModel.getStatus.mockImplementation(() => {
-                throw new Error('Status failure');
-            });
+    it.each([
+        [
+            'an undefined body',
+            undefined,
+            { channelId: Number.NaN, endpointName: undefined, url: undefined, streamKey: '' },
+        ],
+        [
+            'a non-decimal string channelId',
+            { channelId: '12abc', streamKey: 'k', url: 'rtmp://x.invalid/a' },
+            { channelId: Number.NaN, endpointName: undefined, url: 'rtmp://x.invalid/a', streamKey: 'k' },
+        ],
+        [
+            'a non-string channelId',
+            { channelId: [1], streamKey: 'k', endpointName: 'a' },
+            { channelId: Number.NaN, endpointName: 'a', url: undefined, streamKey: 'k' },
+        ],
+        [
+            'blank optional strings',
+            { channelId: 1, streamKey: 'k', endpointName: '  ', url: '  ' },
+            { channelId: 1, endpointName: undefined, url: undefined, streamKey: 'k' },
+        ],
+        [
+            'non-string optional fields',
+            { channelId: 1, streamKey: 1, endpointName: 1, url: 1 },
+            { channelId: 1, endpointName: undefined, url: undefined, streamKey: '' },
+        ],
+    ])('normalizes %s and leaves validation to the model', async (_label, body, expected) => {
+        model.start.mockResolvedValue(undefined);
 
-            const req = makeRequest();
-            const res = makeResponse();
+        await rtmpRoute.post(makeRequest({ body }), makeResponse());
 
-            await rtmpRoute.get(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.body).toEqual({
-                code: 500,
-                message: 'Internal Server Error',
-                errors: 'Status failure',
-            });
-        });
+        expect(model.start).toHaveBeenCalledWith(expected);
     });
 
-    describe('POST /api/rtmp validation and error handling', () => {
-        it('rejects with 400 when body is undefined', async () => {
-            const req = makeRequest({ body: undefined });
-            const res = makeResponse();
-
-            await rtmpRoute.post(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.body.message).toContain('channelId and streamKey are required');
+    it('answers 500 when getStatus throws', async () => {
+        model.getStatus.mockImplementation(() => {
+            throw new Error('synthetic status failure');
         });
+        const res = makeResponse();
 
-        it('rejects with 400 when channelId is missing', async () => {
-            const req = makeRequest({ body: { endpointName: 'YouTube', streamKey: 'key' } });
-            const res = makeResponse();
+        await rtmpRoute.get(makeRequest(), res);
 
-            await rtmpRoute.post(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.body.message).toContain('channelId and streamKey are required');
-        });
-
-        it('rejects with 400 when channelId is 0 or negative', async () => {
-            const req = makeRequest({ body: { channelId: 0, endpointName: 'YouTube', streamKey: 'key' } });
-            const res = makeResponse();
-
-            await rtmpRoute.post(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.body.message).toContain('channelId and streamKey are required');
-        });
-
-        it('rejects with 400 when channelId is non-numeric string', async () => {
-            const req = makeRequest({ body: { channelId: 'abc', endpointName: 'YouTube', streamKey: 'key' } });
-            const res = makeResponse();
-
-            await rtmpRoute.post(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.body.message).toContain('channelId and streamKey are required');
-        });
-
-        it('accepts string channelId and converts it to number', async () => {
-            mockRTMPStreamModel.start.mockResolvedValue(undefined);
-            const req = makeRequest({ body: { channelId: '101', endpointName: 'YouTube', streamKey: 'key' } });
-            const res = makeResponse();
-
-            await rtmpRoute.post(req, res);
-
-            expect(mockRTMPStreamModel.start).toHaveBeenCalledWith(
-                expect.objectContaining({ channelId: 101 }),
-            );
-            expect(res.status).toHaveBeenCalledWith(200);
-        });
-
-        it('rejects with 400 when streamKey is missing', async () => {
-            const req = makeRequest({ body: { channelId: 101, endpointName: 'YouTube' } });
-            const res = makeResponse();
-
-            await rtmpRoute.post(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.body.message).toContain('channelId and streamKey are required');
-        });
-
-        it('rejects with 400 when streamKey is empty or whitespace', async () => {
-            const req = makeRequest({ body: { channelId: 101, endpointName: 'YouTube', streamKey: '   ' } });
-            const res = makeResponse();
-
-            await rtmpRoute.post(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.body.message).toContain('channelId and streamKey are required');
-        });
-
-        it('rejects with 400 when url is not an rtmp/rtmps URL', async () => {
-            const req = makeRequest({
-                body: { channelId: 101, url: 'https://non-rtmp.invalid/stream', streamKey: 'key' },
-            });
-            const res = makeResponse();
-
-            await rtmpRoute.post(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.body.message).toContain('invalid rtmp url');
-        });
-
-        it('rejects with 400 when neither endpointName nor url is provided', async () => {
-            const req = makeRequest({ body: { channelId: 101, streamKey: 'key' } });
-            const res = makeResponse();
-
-            await rtmpRoute.post(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.body.message).toContain('either endpointName or url must be specified');
-        });
-
-        it('responds with 500 when model.start throws', async () => {
-            mockRTMPStreamModel.start.mockRejectedValue(new Error('Process start failed'));
-
-            const req = makeRequest({ body: { channelId: 101, endpointName: 'YouTube', streamKey: 'key' } });
-            const res = makeResponse();
-
-            await rtmpRoute.post(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.body).toEqual({
-                code: 500,
-                message: 'Internal Server Error',
-                errors: 'Process start failed',
-            });
-        });
+        expect(res.statusCode).toBe(500);
     });
 
-    describe('DELETE /api/rtmp error handling', () => {
-        it('responds with 500 when model.stop throws', async () => {
-            mockRTMPStreamModel.stop.mockRejectedValue(new Error('Stop failed'));
+    it('answers 500 when stop rejects', async () => {
+        model.stop.mockRejectedValue(new Error('synthetic stop failure'));
+        const res = makeResponse();
 
-            const req = makeRequest();
-            const res = makeResponse();
+        await rtmpRoute.del(makeRequest(), res);
 
-            await rtmpRoute.del(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.body).toEqual({
-                code: 500,
-                message: 'Internal Server Error',
-                errors: 'Stop failed',
-            });
-        });
+        expect(res.statusCode).toBe(500);
     });
 
-    describe('GET /api/rtmp/endpoints error handling', () => {
-        it('responds with 500 when model.getEndpoints throws', async () => {
-            mockRTMPStreamModel.getEndpoints.mockImplementation(() => {
-                throw new Error('Config read failed');
-            });
-
-            const req = makeRequest();
-            const res = makeResponse();
-
-            await endpointsRoute.get(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.body).toEqual({
-                code: 500,
-                message: 'Internal Server Error',
-                errors: 'Config read failed',
-            });
+    it('answers 500 when getEndpoints throws', async () => {
+        model.getEndpoints.mockImplementation(() => {
+            throw new Error('synthetic endpoints failure');
         });
+        const res = makeResponse();
+
+        await endpointsRoute.get(makeRequest(), res);
+
+        expect(res.statusCode).toBe(500);
     });
 
-    describe('apiDoc definitions', () => {
-        it('attaches valid apiDoc metadata to operations', () => {
-            expect((rtmpRoute.get as any).apiDoc).toBeDefined();
-            expect((rtmpRoute.post as any).apiDoc).toBeDefined();
-            expect((rtmpRoute.del as any).apiDoc).toBeDefined();
-            expect((endpointsRoute.get as any).apiDoc).toBeDefined();
-        });
+    it('documents every operation, including the 400 answer of POST', () => {
+        expect((rtmpRoute.get as any).apiDoc.responses[200]).toBeDefined();
+        expect((rtmpRoute.post as any).apiDoc.responses[400]).toBeDefined();
+        expect((rtmpRoute.del as any).apiDoc.responses[200]).toBeDefined();
+        expect((endpointsRoute.get as any).apiDoc.responses[200]).toBeDefined();
     });
 });

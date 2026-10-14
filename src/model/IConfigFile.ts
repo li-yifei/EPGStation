@@ -62,7 +62,7 @@ export interface RTMPEndpoint {
 
 /** RTMP ライブ配信設定。config.yml `rtmp` の形式。 */
 export interface RTMPConfig {
-    endpoints: RTMPEndpoint[];
+    endpoints?: RTMPEndpoint[];
     cmd: string;
 }
 

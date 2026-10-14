@@ -1,5 +1,5 @@
 import { Operation } from 'express-openapi';
-import IRTMPStreamModel from '../../api/rtmp/IRTMPStreamModel.js';
+import IRTMPStreamModel, { RTMPStreamRequestError } from '../../api/rtmp/IRTMPStreamModel.js';
 import container from '../../ModelContainer.js';
 import * as api from '../api.js';
 
@@ -46,56 +46,43 @@ get.apiDoc = {
 };
 
 /**
- * `POST /rtmp` ハンドラ。指定されたチャンネルと配信先（プリセット名または直接 URL）へ RTMP ライブ配信を開始する。
+ * body の channelId を数値へ変換する。数値か 10 進の数字だけの文字列以外は NaN とし、検証は model に任せる。
+ */
+const toChannelId = (value: unknown): number => {
+    if (typeof value === 'number') {
+        return value;
+    }
+    return typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : Number.NaN;
+};
+
+/** body の文字列項目の前後の空白を除く。文字列以外と空文字は undefined とする。 */
+const toOptionalString = (value: unknown): string | undefined => {
+    const trimmed = typeof value === 'string' ? value.trim() : '';
+    return trimmed === '' ? undefined : trimmed;
+};
+
+/**
+ * `POST /rtmp` ハンドラ。指定されたチャンネルと配信先（プリセット名または直接 URL）へ RTMP ライブ配信を開始し、開始を待って応答する。
+ * 要求の検証は model が行い、不正な要求は 400 を返す。
  */
 export const post: Operation = async (req, res) => {
     const rtmpStreamModel = container.get<IRTMPStreamModel>('IRTMPStreamModel');
+    const body = (req.body ?? {}) as Record<string, unknown>;
 
     try {
-        const { channelId, endpointName, url, streamKey } = req.body ?? {};
-
-        const numericChannelId = typeof channelId === 'number' ? channelId : parseInt(channelId, 10);
-        if (
-            isNaN(numericChannelId) ||
-            numericChannelId <= 0 ||
-            typeof streamKey !== 'string' ||
-            streamKey.trim() === ''
-        ) {
-            api.responseError(res, {
-                code: 400,
-                message: 'Bad Request: channelId and streamKey are required',
-            });
-            return;
-        }
-
-        const trimmedUrl = typeof url === 'string' ? url.trim() : '';
-        const trimmedEndpointName = typeof endpointName === 'string' ? endpointName.trim() : '';
-
-        if (trimmedUrl !== '') {
-            if (!/^rtmps?:\/\/[^\s/]+/i.test(trimmedUrl)) {
-                api.responseError(res, {
-                    code: 400,
-                    message: 'Bad Request: invalid rtmp url',
-                });
-                return;
-            }
-        } else if (trimmedEndpointName === '') {
-            api.responseError(res, {
-                code: 400,
-                message: 'Bad Request: either endpointName or url must be specified',
-            });
-            return;
-        }
-
         await rtmpStreamModel.start({
-            channelId: numericChannelId,
-            endpointName: trimmedEndpointName !== '' ? trimmedEndpointName : undefined,
-            url: trimmedUrl !== '' ? trimmedUrl : undefined,
-            streamKey: streamKey.trim(),
+            channelId: toChannelId(body.channelId),
+            endpointName: toOptionalString(body.endpointName),
+            url: toOptionalString(body.url),
+            streamKey: toOptionalString(body.streamKey) ?? '',
         });
 
         api.responseJSON(res, 200, { message: 'RTMPライブ配信を開始しました' });
     } catch (err: any) {
+        if (err instanceof RTMPStreamRequestError) {
+            api.responseError(res, { code: 400, message: `Bad Request: ${err.message}` });
+            return;
+        }
         api.responseServerError(res, err.message);
     }
 };
@@ -155,7 +142,7 @@ post.apiDoc = {
 };
 
 /**
- * `DELETE /rtmp` ハンドラ。実行中の RTMP ライブ配信を停止する。
+ * `DELETE /rtmp` ハンドラ。実行中の RTMP ライブ配信を停止し、停止を待って応答する。
  */
 export const del: Operation = async (_req, res) => {
     const rtmpStreamModel = container.get<IRTMPStreamModel>('IRTMPStreamModel');

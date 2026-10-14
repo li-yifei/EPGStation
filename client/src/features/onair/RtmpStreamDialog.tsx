@@ -19,6 +19,7 @@ import {
   formatRtmpStartTime,
   formatRtmpStatusLabel,
   isRtmpActive,
+  isValidRtmpStreamKey,
   isValidRtmpUrl,
   readRtmpStreamKey,
   writeRtmpStreamKey,
@@ -206,6 +207,12 @@ export function RtmpStreamDialog({
               autoComplete="off"
               disabled={formDisabled}
               value={streamKey}
+              error={streamKey.trim() !== '' && !isValidRtmpStreamKey(streamKey)}
+              helperText={
+                streamKey.trim() !== '' && !isValidRtmpStreamKey(streamKey)
+                  ? 'ストリームキーに空白を含めることはできません'
+                  : 'ストリームキーは配信先ごとにこのブラウザに保存されます'
+              }
               onChange={(event) => setStreamKeyOverride(event.target.value)}
               slotProps={{
                 input: {

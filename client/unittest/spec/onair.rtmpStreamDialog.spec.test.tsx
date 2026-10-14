@@ -67,6 +67,9 @@ describe('RtmpStreamDialog', () => {
     expect(await screen.findByText('YouTube Live')).toBeInTheDocument()
     const keyField = screen.getByLabelText('ストリームキー')
     expect(keyField).toHaveAttribute('type', 'password')
+    expect(
+      screen.getByText('ストリームキーは配信先ごとにこのブラウザに保存されます'),
+    ).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'ストリームキーを表示' }))
     expect(keyField).toHaveAttribute('type', 'text')
 

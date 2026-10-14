@@ -76,8 +76,14 @@ export function adaptRtmpStatus(value: unknown): RtmpStatus | null {
   return status
 }
 
+/** Same rule as the server: rtmp:// or rtmps://, a host, and no whitespace (it would split the ffmpeg command). */
 export function isValidRtmpUrl(value: string): boolean {
-  return /^rtmps?:\/\/[^\s/]+/i.test(value.trim())
+  return /^rtmps?:\/\/[^\s/]+\S*$/i.test(value.trim())
+}
+
+/** Same rule as the server: at least one character and no whitespace after trimming. */
+export function isValidRtmpStreamKey(value: string): boolean {
+  return /^\S+$/.test(value.trim())
 }
 
 export function buildRtmpStartPayload({
@@ -92,7 +98,7 @@ export function buildRtmpStartPayload({
   streamKey: string
 }): RtmpStartPayload | null {
   const key = streamKey.trim()
-  if (channelId === null || key === '') {
+  if (channelId === null || !isValidRtmpStreamKey(key)) {
     return null
   }
 
