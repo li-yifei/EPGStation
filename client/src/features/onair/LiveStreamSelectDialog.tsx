@@ -30,6 +30,7 @@ import {
   repairSelectionForCandidates,
 } from './lib/liveStreamSelection'
 import styles from './OnAirPage.module.css'
+import { RtmpStreamDialog } from './RtmpStreamDialog'
 
 export interface LiveStreamSelectChannel {
   id: number
@@ -164,115 +165,142 @@ export function LiveStreamSelectDialog({
     }
   }
 
+  const [rtmpChannel, setRtmpChannel] = useState<LiveStreamSelectChannel | null>(null)
+  // Hand the channel over to the RTMP dialog and close the stream selection dialog.
+  const openRtmp = () => {
+    if (channel === null) {
+      return
+    }
+    setRtmpChannel(channel)
+    closeAndSave()
+  }
+
   const buttonSx = { color: '#1976d2' }
 
   return (
-    <Dialog
-      open={open}
-      aria-label="ストリーム選択"
-      onClose={closeAndSave}
-      slotProps={{
-        paper: {
-          'aria-label': 'ストリーム選択',
-          sx: {
-            maxWidth: 400,
-            width: '100%',
-            '@media (max-width: 600px)': {
-              margin: 0,
-              maxWidth: '100%',
+    <>
+      <Dialog
+        open={open}
+        aria-label="ストリーム選択"
+        onClose={closeAndSave}
+        slotProps={{
+          paper: {
+            'aria-label': 'ストリーム選択',
+            sx: {
+              maxWidth: 400,
               width: '100%',
+              '@media (max-width: 600px)': {
+                margin: 0,
+                maxWidth: '100%',
+                width: '100%',
+              },
             },
           },
-        },
-      }}
-    >
-      <DialogContent className={styles.streamDialogContent}>
-        <p>{channel?.name ?? ''}</p>
-        <div className={styles.streamSelectRow}>
-          <label className={styles.streamTypeField}>
-            <AppSelect
-              ariaLabel="配信方式"
-              value={selection.type}
-              options={candidates.map((candidate) => ({
-                label: candidate.type,
-                value: candidate.type,
-              }))}
-              onChange={(value) => {
-                // The options are built from `candidates`, so the emitted value is
-                // always one of their types.
-                const type = value as LiveStreamType
+        }}
+      >
+        <DialogContent className={styles.streamDialogContent}>
+          <p>{channel?.name ?? ''}</p>
+          <div className={styles.streamSelectRow}>
+            <label className={styles.streamTypeField}>
+              <AppSelect
+                ariaLabel="配信方式"
+                value={selection.type}
+                options={candidates.map((candidate) => ({
+                  label: candidate.type,
+                  value: candidate.type,
+                }))}
+                onChange={(value) => {
+                  // The options are built from `candidates`, so the emitted value is
+                  // always one of their types.
+                  const type = value as LiveStreamType
+                  setSelection((current) =>
+                    repairSelectionForCandidates({ ...current, type }, candidates),
+                  )
+                }}
+              />
+            </label>
+            <label className={styles.streamModeField}>
+              <AppSelect
+                ariaLabel="画質"
+                value={selection.mode}
+                options={(currentCandidate?.modes ?? []).map((mode, index) => ({
+                  label: mode,
+                  value: index,
+                }))}
+                onChange={(value) => {
+                  setSelection((current) => ({
+                    ...current,
+                    mode: Number(value),
+                  }))
+                }}
+              />
+            </label>
+          </div>
+          <label className={styles.programCheckbox}>
+            <input
+              aria-label="外部アプリで開く"
+              role="switch"
+              type="checkbox"
+              {...form.register('useURLScheme')}
+              checked={selection.useURLScheme}
+              onChange={(event) => {
+                const useURLScheme = event.target.checked
+                const nextCandidates = resolveLiveStreamCandidates({ streamConfig, useURLScheme })
                 setSelection((current) =>
-                  repairSelectionForCandidates({ ...current, type }, candidates),
+                  repairSelectionForCandidates(
+                    {
+                      ...current,
+                      useURLScheme,
+                      type: nextCandidates[0]?.type ?? current.type,
+                      mode: 0,
+                    },
+                    nextCandidates,
+                  ),
                 )
               }}
             />
+            <span>外部アプリで開く</span>
           </label>
-          <label className={styles.streamModeField}>
-            <AppSelect
-              ariaLabel="画質"
-              value={selection.mode}
-              options={(currentCandidate?.modes ?? []).map((mode, index) => ({
-                label: mode,
-                value: index,
-              }))}
-              onChange={(value) => {
-                setSelection((current) => ({
-                  ...current,
-                  mode: Number(value),
-                }))
-              }}
-            />
-          </label>
-        </div>
-        <label className={styles.programCheckbox}>
-          <input
-            aria-label="外部アプリで開く"
-            role="switch"
-            type="checkbox"
-            {...form.register('useURLScheme')}
-            checked={selection.useURLScheme}
-            onChange={(event) => {
-              const useURLScheme = event.target.checked
-              const nextCandidates = resolveLiveStreamCandidates({ streamConfig, useURLScheme })
-              setSelection((current) =>
-                repairSelectionForCandidates(
-                  {
-                    ...current,
-                    useURLScheme,
-                    type: nextCandidates[0]?.type ?? current.type,
-                    mode: 0,
-                  },
-                  nextCandidates,
-                ),
-              )
-            }}
-          />
-          <span>外部アプリで開く</span>
-        </label>
-      </DialogContent>
-      <DialogActions>
-        {showGuide ? (
-          <Button sx={buttonSx} onClick={navigateToGuide}>
-            番組表
+        </DialogContent>
+        <DialogActions>
+          {showGuide ? (
+            <Button sx={buttonSx} onClick={navigateToGuide}>
+              番組表
+            </Button>
+          ) : undefined}
+          <Button
+            sx={{ color: '#ef6c00', mr: 'auto' }}
+            disabled={channel === null}
+            onClick={openRtmp}
+          >
+            RTMP配信
           </Button>
-        ) : undefined}
-        <Button sx={{ ...buttonSx, minWidth: 110 }} onClick={closeAndSave}>
-          キャンセル
-        </Button>
-        <Button
-          sx={buttonSx}
-          disabled={channel === null || candidates.length === 0}
-          onClick={
-            channel === null
-              ? undefined
-              : () => {
-                  watch(channel)
-                }
-          }
-        >
-          視聴
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Button sx={{ ...buttonSx, minWidth: 110 }} onClick={closeAndSave}>
+            キャンセル
+          </Button>
+          <Button
+            sx={buttonSx}
+            disabled={channel === null || candidates.length === 0}
+            onClick={
+              channel === null
+                ? undefined
+                : () => {
+                    watch(channel)
+                  }
+            }
+          >
+            視聴
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {rtmpChannel === null ? undefined : (
+        <RtmpStreamDialog
+          open
+          channel={rtmpChannel}
+          onClose={() => setRtmpChannel(null)}
+          onSnackbar={onSnackbar}
+        />
+      )}
+    </>
   )
 }

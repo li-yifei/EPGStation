@@ -311,3 +311,16 @@
 :global([data-theme-mode='dark']) .watchInfoDescription {
   color: var(--mui-palette-text-secondary, rgb(255 255 255 / 70%));
 }
+
+.rtmpChannelRow {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.rtmpCaption.rtmpCaption {
+  color: rgb(0 0 0 / 60%);
+  font-size: 0.75rem;
+  margin-top: -8px;
+}
