@@ -33,6 +33,8 @@ import IStorageApiModel from './api/storage/IStorageApiModel.js';
 import StorageApiModel from './api/storage/StorageApiModel.js';
 import IStreamApiModel from './api/stream/IStreamApiModel.js';
 import StreamApiModel from './api/stream/StreamApiModel.js';
+import IRTMPStreamModel from './api/rtmp/IRTMPStreamModel.js';
+import RTMPStreamModel from './api/rtmp/RTMPStreamModel.js';
 import IThumbnailApiModel from './api/thumbnail/IThumbnailApiModel.js';
 import ThumbnailApiModel from './api/thumbnail/ThumbnailApiModel.js';
 import IVideoApiModel from './api/video/IVideoApiModel.js';
@@ -866,6 +868,8 @@ export const set = (container: Container): void => {
     container.bind<IStreamManageModel>('IStreamManageModel').to(StreamManageModel).inSingletonScope();
 
     container.bind<IStreamApiModel>('IStreamApiModel').to(StreamApiModel).inSingletonScope();
+
+    container.bind<IRTMPStreamModel>('IRTMPStreamModel').to(RTMPStreamModel).inSingletonScope();
 
     container.bind<IStorageApiModel>('IStorageApiModel').to(StorageApiModel).inSingletonScope();
 

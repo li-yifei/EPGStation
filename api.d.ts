@@ -761,3 +761,48 @@ export interface StorageInfo {
 export interface VersionInfo {
     version: string;
 }
+
+/**
+ * RTMP
+ */
+
+export type RTMPStreamStatus = 'idle' | 'starting' | 'streaming' | 'stopping' | 'error';
+
+/**
+ * RTMPエンドポイント情報
+ */
+export interface RTMPEndpoint {
+    name: string;
+    url: string;
+    description: string;
+}
+
+/**
+ * RTMPエンドポイント一覧
+ */
+export interface RTMPEndpoints {
+    endpoints: RTMPEndpoint[];
+}
+
+/**
+ * RTMPライブ配信状態
+ */
+export interface RTMPStreamInfo {
+    isStreaming: boolean;
+    status: RTMPStreamStatus;
+    channelId?: ChannelId;
+    endpointName?: string;
+    startTime?: UnixtimeMS;
+    errorMessage?: string;
+}
+
+/**
+ * RTMPライブ配信開始オプション
+ */
+export interface StartRTMPStreamOption {
+    channelId: ChannelId;
+    endpointName?: string;
+    url?: string;
+    streamKey: string;
+}
+

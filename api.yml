@@ -1525,6 +1525,87 @@ components:
                 streamId:
                     $ref: '#/components/schemas/StreamId'
 
+        RTMPStreamStatus:
+            description: RTMPライブ配信状態
+            type: string
+            enum:
+                - idle
+                - starting
+                - streaming
+                - stopping
+                - error
+
+        RTMPEndpoint:
+            description: RTMPエンドポイント情報
+            type: object
+            required:
+                - name
+                - url
+                - description
+            properties:
+                name:
+                    description: エンドポイント名
+                    type: string
+                url:
+                    description: RTMP URL
+                    type: string
+                description:
+                    description: エンドポイントの説明
+                    type: string
+
+        RTMPEndpoints:
+            description: RTMPエンドポイント一覧
+            type: object
+            required:
+                - endpoints
+            properties:
+                endpoints:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RTMPEndpoint'
+
+        RTMPStreamInfo:
+            description: RTMPライブ配信状態
+            type: object
+            required:
+                - isStreaming
+                - status
+            properties:
+                isStreaming:
+                    description: 配信中かどうか
+                    type: boolean
+                status:
+                    $ref: '#/components/schemas/RTMPStreamStatus'
+                channelId:
+                    $ref: '#/components/schemas/ChannelId'
+                endpointName:
+                    description: 配信先エンドポイント名
+                    type: string
+                startTime:
+                    $ref: '#/components/schemas/UnixtimeMS'
+                errorMessage:
+                    description: エラーメッセージ
+                    type: string
+
+        StartRTMPStreamOption:
+            description: RTMPライブ配信開始オプション
+            type: object
+            required:
+                - channelId
+                - streamKey
+            properties:
+                channelId:
+                    $ref: '#/components/schemas/ChannelId'
+                endpointName:
+                    description: 配信先エンドポイント名 (url未指定時は必須)
+                    type: string
+                url:
+                    description: 直接指定のRTMP URL (endpointName未指定時は必須)
+                    type: string
+                streamKey:
+                    description: 配信ストリームキー
+                    type: string
+
         StorageItem:
             description: ストレージ使用状況
             type: object
