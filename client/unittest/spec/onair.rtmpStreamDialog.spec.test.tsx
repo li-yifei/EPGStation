@@ -186,7 +186,7 @@ describe('LiveStreamSelectDialog RTMP entry', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'RTMP配信' }))
 
-    expect(onClose).toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
     expect(await screen.findByRole('dialog', { name: 'RTMP配信' })).toBeInTheDocument()
     // No configured endpoints: the dialog falls back to a custom URL.
     expect(await screen.findByLabelText('RTMP URL')).toBeInTheDocument()

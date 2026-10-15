@@ -172,7 +172,6 @@ export function LiveStreamSelectDialog({
       return
     }
     setRtmpChannel(channel)
-    closeAndSave()
   }
 
   const buttonSx = { color: '#1976d2' }
